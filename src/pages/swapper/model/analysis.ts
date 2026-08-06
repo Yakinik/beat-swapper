@@ -11,14 +11,14 @@ export const analysis = signal<BeatAnalysis | null>(null)
 export const analysisStage = signal<AnalysisStage | null>(null)
 export const analysisError = signal<string | null>(null)
 
-/** 小節の頭を前後させられる拍数 */
+/** 開始する拍（小節の区切り）を前後させられる拍数 */
 export const BEAT_SHIFT_LIMIT = 3
 /** 開始する小節を前後させられる小節数 */
 export const BAR_SHIFT_LIMIT = 3
 
 /** 自動推定した 1 拍目の位相（0〜拍数-1）。手動グリッドでは常に 0。 */
 export const estimatedPhase = signal(0)
-/** 小節の頭の手動調整（拍単位） */
+/** 開始する拍の手動調整（拍単位）。小節の区切りが前後する。 */
 export const beatShift = signal(0)
 /** 開始する小節の手動調整（小節単位）。マイナスは音源より手前＝無音 */
 export const barShift = signal(0)
@@ -94,7 +94,7 @@ export const adjusted = computed(
   () => beatShift.value !== 0 || barShift.value !== 0 || beatOffsetMs.value !== 0,
 )
 
-/** 小節の頭・開始する小節・拍の調節だけを初期値へ戻す。 */
+/** 開始する拍・開始する小節・拍の調節だけを初期値へ戻す。 */
 export function resetAdjustments(): void {
   beatShift.value = 0
   barShift.value = 0

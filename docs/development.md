@@ -62,7 +62,7 @@ src/
    downbeat.ts   1 拍目の位相を推定（拡大波形クリックとスライダーで手動補正）
          │
          ▼
-   startIndex = 推定位相 + 小節の頭(-3〜+3 拍) + 開始する小節(-3〜+3 小節) × 拍数
+   startIndex = 推定位相 + 開始する拍(-3〜+3 拍) + 開始する小節(-3〜+3 小節) × 拍数
          │  ＋ 拍の調節（±16 分音符の時間補正）でグリッド全体をずらす
          ▼
    slice-plan.ts グリッド + 開始インデックス + 拍数 + 並び順
@@ -98,7 +98,7 @@ src/
 
 | チャンク | gzip | 読み込むタイミング |
 | --- | --- | --- |
-| `index-*.js` + `index-*.css` | 約 19KB | 初期表示 |
+| `index-*.js` + `index-*.css` | 約 23KB | 初期表示 |
 | `beat-analyzer.worker-*.js` | 約 1KB | 最初の解析 |
 | `essentia.js-core.es-*.js` | 約 9KB | 最初の解析 |
 | `essentia-wasm.es-*.js` | 約 790KB | 最初の解析 |

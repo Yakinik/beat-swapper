@@ -62,7 +62,7 @@ export function BeatGridControls() {
 
       <Slider
         class={styles.slider}
-        label="小節の頭"
+        label="開始する拍"
         value={beatShift.value}
         min={-BEAT_SHIFT_LIMIT}
         max={BEAT_SHIFT_LIMIT}

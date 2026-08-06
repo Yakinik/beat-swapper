@@ -1,5 +1,6 @@
 import { computed, effect, signal } from '@preact/signals'
 
+import { DEFAULT_PLAYBACK_RATE } from '../config/playback-rates'
 import { getAudioContext, resumeAudioContext } from '../lib/audio-context'
 import { SlicePlayer } from '../lib/scheduler'
 import { EMPTY_PLAN, type SlicePlan, buildSlicePlan, sliceIndexAt } from '../lib/slice-plan'
@@ -13,6 +14,8 @@ export const looping = signal(true)
 export const volume = signal(0.9)
 /** クリックノイズ対策のフェード長 [ms] */
 export const fadeMs = signal(4)
+/** 再生速度。スケジューラ側で時間伸縮するのでピッチは変わらない。 */
+export const playbackRate = signal<number>(DEFAULT_PLAYBACK_RATE)
 /** 出力タイムライン上の再生位置 [s]。一時停止・停止のあいだも保持する。 */
 export const playhead = signal(0)
 
@@ -49,6 +52,7 @@ const getPlayer = (): SlicePlayer => {
   created.setVolume(volume.peek())
   created.setFadeSeconds(fadeMs.peek() / 1000)
   created.setLoop(looping.peek())
+  created.setRate(playbackRate.peek())
   player = created
   return created
 }
@@ -159,7 +163,7 @@ export function stepBar(delta: number): void {
 }
 
 /**
- * 計画が変わったとき、鳴っていた小節の同じ位置へ移す。並び順や小節の頭を触るたびに
+ * 計画が変わったとき、鳴っていた小節の同じ位置へ移す。並び順や開始する拍を触るたびに
  * 曲の先頭へ戻ってしまわないようにするため。
  */
 function remapPosition(from: SlicePlan, to: SlicePlan, at: number): number {
@@ -200,4 +204,14 @@ effect(() => {
 
 effect(() => {
   player?.setLoop(looping.value)
+})
+
+// 既にスケジュール済みの音は古い速度のままなので、いまの位置から積み直す。
+effect(() => {
+  const rate = playbackRate.value
+  if (!player) return
+  const at = position()
+  player.setRate(rate)
+  playhead.value = at
+  if (playing.peek()) player.play(at)
 })

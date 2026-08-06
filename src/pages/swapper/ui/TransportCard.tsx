@@ -2,6 +2,7 @@ import { formatTime } from '@/shared/lib'
 import { Button, Icon, type IconName } from '@/shared/ui'
 
 import {
+  looping,
   pause,
   play,
   playhead,
@@ -12,6 +13,7 @@ import {
   stepBeat,
   stop,
 } from '../model/playback'
+import { PlaybackRateField } from './PlaybackRateField'
 import styles from './TransportCard.module.css'
 
 interface Step {
@@ -52,6 +54,18 @@ export function TransportCard() {
         <Icon name="stop" />
       </Button>
 
+      <Button
+        square
+        title={looping.value ? 'ループ再生: オン' : 'ループ再生: オフ'}
+        aria-pressed={looping.value}
+        class={looping.value ? styles.on : undefined}
+        onClick={() => {
+          looping.value = !looping.value
+        }}
+      >
+        <Icon name="loop" />
+      </Button>
+
       <span class={styles.divider} aria-hidden="true" />
 
       {STEPS.map((step) => (
@@ -70,6 +84,8 @@ export function TransportCard() {
       <span class={styles.time}>
         {formatTime(playhead.value)} / {formatTime(current.duration)}
       </span>
+
+      <PlaybackRateField />
     </div>
   )
 }

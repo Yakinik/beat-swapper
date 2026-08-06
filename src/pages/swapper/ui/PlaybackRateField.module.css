@@ -1,0 +1,101 @@
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.combo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 2px 0 6px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 3px);
+  background: var(--panel-alt);
+}
+
+.input {
+  width: 3em;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.suffix {
+  padding: 0 2px 0 1px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius) - 5px);
+  background: transparent;
+  color: var(--muted);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--fg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 100%;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.14);
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: calc(var(--radius) - 5px);
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--panel-alt);
+}
+
+.current {
+  color: var(--accent);
+  font-weight: 700;
+}

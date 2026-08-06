@@ -1,11 +1,6 @@
 import { computed, signal } from '@preact/signals'
 
-import {
-  DEFAULT_ORDER_TEXT,
-  MAX_ORDER_LENGTH,
-  ORDER_PRESETS,
-  ORIGINAL_ORDER_TEXT,
-} from '../config/preset-orders'
+import { DEFAULT_ORDER_TEXT, MAX_ORDER_LENGTH, ORDER_PRESETS } from '../config/preset-orders'
 import type { BeatsPerBar } from '../lib/beat-analysis'
 import { beatsPerBar } from './bar-shape'
 
@@ -36,12 +31,9 @@ export function parseOrder(text: string, beats: BeatsPerBar): OrderParseResult {
 }
 
 const parseOrDefault = (text: string, beats: BeatsPerBar): number[] =>
-  parseOrder(text, beats).order ?? parseOrder(ORIGINAL_ORDER_TEXT[beats], beats).order ?? [1]
+  parseOrder(text, beats).order ?? parseOrder(DEFAULT_ORDER_TEXT[beats], beats).order ?? [1]
 
 export const orderText = signal(DEFAULT_ORDER_TEXT[beatsPerBar.peek()])
-
-/** 元の並びで鳴らす A/B 比較モード */
-export const bypass = signal(false)
 
 /** 入力が壊れているあいだも直前の有効な並びで鳴らし続けるための保持値 */
 const appliedOrder = signal<number[]>(
@@ -52,11 +44,8 @@ export const orderError = computed(() => parseOrder(orderText.value, beatsPerBar
 
 export const presets = computed(() => ORDER_PRESETS[beatsPerBar.value])
 
-export const effectiveOrder = computed<number[]>(() =>
-  bypass.value
-    ? parseOrDefault(ORIGINAL_ORDER_TEXT[beatsPerBar.value], beatsPerBar.value)
-    : appliedOrder.value,
-)
+// 元の並び（`1234`）はプリセットの先頭に置いてあるので、A/B 比較用の切り替えは持たない。
+export const effectiveOrder = computed<number[]>(() => appliedOrder.value)
 
 export function setOrderText(text: string): void {
   orderText.value = text
