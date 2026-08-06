@@ -58,16 +58,11 @@ export class SlicePlayer {
   }
 
   /**
-   * 並べ替え計画を差し替える。再生中なら同じ小節の頭から鳴らし直す
-   * （並び順を変えた瞬間に曲の先頭へ戻らないようにするため）。
+   * 並べ替え計画を差し替える。鳴らし直しは呼び出し側の判断（どの位置から続けるかは
+   * モデルが決める）。
    */
   setPlan(plan: SlicePlan): void {
-    const bar = this.playing ? this.#currentBar() : -1
     this.#plan = plan
-    if (!this.playing) return
-
-    const resumeAt = bar < 0 ? 0 : (plan.slices.find((slice) => slice.bar >= bar)?.startAt ?? 0)
-    this.play(resumeAt)
   }
 
   setVolume(value: number): void {
@@ -114,11 +109,6 @@ export class SlicePlayer {
     this.#nextIndex = 0
   }
 
-  #currentBar(): number {
-    const index = sliceIndexAt(this.#plan, this.outputTime)
-    return index < 0 ? -1 : (this.#plan.slices[index]?.bar ?? -1)
-  }
-
   readonly #tick = (): void => {
     const context = this.#context
     const { slices, duration } = this.#plan
@@ -163,10 +153,20 @@ export class SlicePlayer {
     const lateBy = Math.max(0, context.currentTime - when)
     if (lateBy >= slice.duration) return
 
-    const startTime = when + lateBy
-    const offset = slice.offset + lateBy
-    if (offset >= buffer.duration) return
-    const playable = Math.min(slice.duration - lateBy, buffer.duration - offset)
+    let startTime = when + lateBy
+    let offset = slice.offset + lateBy
+    let playable = slice.duration - lateBy
+
+    // 音源より手前を指すスライス（開始する小節をマイナスにしたとき）は、その分だけ
+    // 何もスケジュールしない。出力位置は startAt で決まるので、そのまま無音になる。
+    if (offset < 0) {
+      const silence = Math.min(-offset, playable)
+      startTime += silence
+      playable -= silence
+      offset = 0
+    }
+    if (playable <= 0 || offset >= buffer.duration) return
+    playable = Math.min(playable, buffer.duration - offset)
     if (playable <= 0) return
 
     const gain = context.createGain()

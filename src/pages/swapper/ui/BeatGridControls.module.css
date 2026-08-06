@@ -1,13 +1,17 @@
 .block {
   display: flex;
+  flex: 1 1 260px;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 8px;
+  min-width: 240px;
+  max-width: 340px;
 }
 
 .head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   min-height: 24px;
 }
@@ -23,8 +27,13 @@
   font-size: 12px;
 }
 
+.slider {
+  min-width: 0;
+}
+
 .hint {
-  margin: 0;
+  margin: -2px 0 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.6;
 }

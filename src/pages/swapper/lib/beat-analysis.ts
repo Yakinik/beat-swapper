@@ -3,8 +3,15 @@
 /** RhythmExtractor2013 は入力が 44.1kHz であることを前提にしている。 */
 export const ANALYSIS_SAMPLE_RATE = 44100
 
-/** 4/4 固定。1 小節 = 4 拍。 */
-export const BEATS_PER_BAR = 4
+/**
+ * 1 小節の拍数。検出した拍列をどう区切るかの解釈でしかないので、解析はやり直さず
+ * 切り替えられる。
+ */
+export type BeatsPerBar = 3 | 4
+
+export const BEATS_PER_BAR_OPTIONS: readonly BeatsPerBar[] = [4, 3]
+
+export const DEFAULT_BEATS_PER_BAR: BeatsPerBar = 4
 
 export type AnalysisStage = 'decoding' | 'loading-engine' | 'tracking-beats' | 'done'
 

@@ -6,11 +6,12 @@ import { analysis } from '../model/analysis'
 import { openFile } from '../model/session'
 import { track } from '../model/track'
 import { AnalysisStatus } from './AnalysisStatus'
-import { DownbeatControls } from './DownbeatControls'
+import { BeatGridControls } from './BeatGridControls'
 import { DropZone, PickFileButton } from './DropZone'
 import { OrderInput } from './OrderInput'
 import styles from './SwapperPage.module.css'
 import { TransportBar } from './TransportBar'
+import { TransportCard } from './TransportCard'
 import { WaveformView } from './WaveformView'
 
 export function SwapperPage() {
@@ -58,12 +59,13 @@ export function SwapperPage() {
         {loaded ? (
           <>
             <AnalysisStatus />
+            {analyzed && <TransportCard />}
             <WaveformView />
             {analyzed && (
               <>
                 <section class={styles.controls}>
                   <OrderInput />
-                  <DownbeatControls />
+                  <BeatGridControls />
                 </section>
                 <TransportBar />
               </>

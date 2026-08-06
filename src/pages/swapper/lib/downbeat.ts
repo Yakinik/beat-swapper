@@ -1,11 +1,11 @@
-import { BEATS_PER_BAR, type BeatFeatures } from './beat-analysis'
+import type { BeatFeatures, BeatsPerBar } from './beat-analysis'
 
 // 「どの拍が 1 拍目か」を決める。
 //
 // Essentia の Meter アルゴリズムは公式ドキュメントでも experimental・not evaluated と
-// されていて、これに頼るのは危うい。ここでは 4/4 を前提に、拍ごとの特徴量から
-// 位相 0〜3 を選ぶだけの素朴なヒューリスティックにしている。外したときは UI の
-// 「1 拍ずらす」と波形クリックで直せる、という前提の設計。
+// されていて、これに頼るのは危うい。ここでは拍ごとの特徴量から位相を選ぶだけの素朴な
+// ヒューリスティックにしている。外したときは UI の「小節の頭」と拡大波形のクリックで
+// 直せる、という前提の設計。
 //
 //   低域が強い拍       … キックとベースの入れ替わりは 1 拍目に来やすい
 //   立ち上がりが強い拍 … 小節頭は音が変わるので鳴り出しが目立つ
@@ -36,17 +36,20 @@ function standardize(values: Float32Array): Float32Array {
   return result
 }
 
-/** 位相ごと（0〜3）のスコア。大きいほど「そこが 1 拍目らしい」。 */
-export function scoreDownbeatPhases(features: BeatFeatures): number[] {
+/** 位相ごとのスコア。大きいほど「そこが 1 拍目らしい」。要素数は beatsPerBar。 */
+export function scoreDownbeatPhases(
+  features: BeatFeatures,
+  beatsPerBar: BeatsPerBar,
+): number[] {
   const low = standardize(features.low)
   const onset = standardize(features.onset)
   const high = standardize(features.high)
 
-  const sums = new Array<number>(BEATS_PER_BAR).fill(0)
-  const counts = new Array<number>(BEATS_PER_BAR).fill(0)
+  const sums = new Array<number>(beatsPerBar).fill(0)
+  const counts = new Array<number>(beatsPerBar).fill(0)
 
   for (let i = 0; i < low.length; i += 1) {
-    const phase = i % BEATS_PER_BAR
+    const phase = i % beatsPerBar
     sums[phase] =
       (sums[phase] ?? 0) +
       LOW_WEIGHT * (low[i] ?? 0) +
@@ -61,9 +64,12 @@ export function scoreDownbeatPhases(features: BeatFeatures): number[] {
   })
 }
 
-/** 1 拍目とみなす位相を 0〜3 で返す。 */
-export function estimateDownbeatPhase(features: BeatFeatures): number {
-  const scores = scoreDownbeatPhases(features)
+/** 1 拍目とみなす位相を 0〜beatsPerBar-1 で返す。 */
+export function estimateDownbeatPhase(
+  features: BeatFeatures,
+  beatsPerBar: BeatsPerBar,
+): number {
+  const scores = scoreDownbeatPhases(features, beatsPerBar)
   let best = 0
   for (let phase = 1; phase < scores.length; phase += 1) {
     if ((scores[phase] ?? 0) > (scores[best] ?? 0)) best = phase

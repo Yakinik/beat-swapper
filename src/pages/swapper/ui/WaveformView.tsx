@@ -1,10 +1,10 @@
 import { useSignal, useSignalEffect } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
 
-import { BEATS_PER_BAR } from '../lib/beat-analysis'
-import { barRange } from '../lib/slice-plan'
+import { barRange, gridTime } from '../lib/slice-plan'
 import { type TimeRange, drawWaveform } from '../lib/waveform'
-import { analysis, downbeatPhase, setDownbeatFromTime } from '../model/analysis'
+import { analysis, grid, setDownbeatFromTime, startIndex } from '../model/analysis'
+import { beatsPerBar } from '../model/bar-shape'
 import { activeSlice } from '../model/playback'
 import { track } from '../model/track'
 import styles from './WaveformView.module.css'
@@ -20,28 +20,29 @@ const ratioOfClick = (canvas: HTMLCanvasElement, clientX: number): number => {
 export function WaveformView() {
   const overviewRef = useRef<HTMLCanvasElement>(null)
   const detailRef = useRef<HTMLCanvasElement>(null)
-  /** 停止中に拡大表示が見ている中心時刻。0 なら曲の最初の小節。 */
+  /** 停止中に拡大表示が見ている中心時刻。0 なら 1 小節目。 */
   const detailCenter = useSignal(0)
 
   // 描画は peek だけで読む。購読は useSignalEffect 側で明示する。
   const detailView = (): TimeRange | null => {
     const loaded = track.peek()
-    const result = analysis.peek()
-    if (!loaded || !result || result.ticks.length < BEATS_PER_BAR + 1) return null
+    const current = grid.peek()
+    if (!loaded || !current || current.ticks.length < 2) return null
 
-    const { ticks } = result
-    const phase = downbeatPhase.peek()
+    const beats = beatsPerBar.peek()
+    const head = startIndex.peek()
+    const total = current.ticks.length
     const beatSeconds =
-      ((ticks[ticks.length - 1] ?? 0) - (ticks[0] ?? 0)) / Math.max(1, ticks.length - 1)
-    const window = Math.max(0.5, DETAIL_BARS * BEATS_PER_BAR * beatSeconds)
+      (gridTime(current, total - 1) - gridTime(current, 0)) / Math.max(1, total - 1)
+    const window = Math.max(0.5, DETAIL_BARS * beats * beatSeconds)
     const half = window / 2
 
     // 再生中は鳴っている小節を追う。拍ごとに動かすと目が回るので小節単位で止める。
     const slice = activeSlice.peek()
-    const playingBar = slice ? barRange(ticks, phase, slice.bar) : null
+    const playingBar = slice ? barRange(current, head, beats, slice.bar) : null
     const center = playingBar
       ? (playingBar.from + playingBar.to) / 2
-      : detailCenter.peek() || (ticks[phase] ?? 0) + half
+      : detailCenter.peek() || gridTime(current, head) + half
 
     const limit = Math.max(half, loaded.buffer.duration - half)
     const clamped = Math.min(Math.max(center, half), limit)
@@ -52,12 +53,12 @@ export function WaveformView() {
     const loaded = track.peek()
     if (!loaded) return
 
-    const result = analysis.peek()
     const shared = {
       peaks: loaded.peaks,
       duration: loaded.buffer.duration,
-      ticks: result?.ticks ?? null,
-      phase: downbeatPhase.peek(),
+      grid: grid.peek(),
+      startIndex: startIndex.peek(),
+      beatsPerBar: beatsPerBar.peek(),
       active: activeSlice.peek(),
     }
     const view = detailView()
@@ -80,8 +81,9 @@ export function WaveformView() {
 
   useSignalEffect(() => {
     void track.value
-    void analysis.value
-    void downbeatPhase.value
+    void grid.value
+    void startIndex.value
+    void beatsPerBar.value
     void activeSlice.value
     void detailCenter.value
     redraw()

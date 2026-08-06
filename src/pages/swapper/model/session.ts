@@ -2,16 +2,9 @@ import { signal } from '@preact/signals'
 
 import { analyzeBeats } from '../lib/analyzer-client'
 import { decodeAudioFile, toAnalysisPcm } from '../lib/audio-source'
-import { ANALYSIS_SAMPLE_RATE, BEATS_PER_BAR } from '../lib/beat-analysis'
-import { estimateDownbeatPhase } from '../lib/downbeat'
+import { ANALYSIS_SAMPLE_RATE, DEFAULT_BEATS_PER_BAR } from '../lib/beat-analysis'
 import { computePeaks } from '../lib/waveform'
-import {
-  analysis,
-  analysisError,
-  analysisStage,
-  downbeatPhase,
-  estimatedPhase,
-} from './analysis'
+import { analysis, analysisError, analysisStage, resetAdjustments } from './analysis'
 import { stop } from './playback'
 import { track } from './track'
 
@@ -30,6 +23,7 @@ export async function openFile(file: File): Promise<void> {
   analysis.value = null
   analysisError.value = null
   analysisStage.value = 'decoding'
+  resetAdjustments()
   busy.value = true
 
   try {
@@ -46,13 +40,10 @@ export async function openFile(file: File): Promise<void> {
     })
     if (current !== generation) return
 
-    if (result.ticks.length < BEATS_PER_BAR + 1) {
+    if (result.ticks.length < DEFAULT_BEATS_PER_BAR + 1) {
       throw new Error('拍を検出できませんでした。テンポの分かりやすい曲で試してください')
     }
 
-    const phase = estimateDownbeatPhase(result.features)
-    estimatedPhase.value = phase
-    downbeatPhase.value = phase
     analysis.value = result
     analysisStage.value = 'done'
   } catch (error) {

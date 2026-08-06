@@ -1,5 +1,3 @@
-import { BEATS_PER_BAR } from './beat-analysis'
-
 // 曲頭・曲尾の取りこぼしを埋める。
 //
 // RhythmExtractor2013 は曲の最初の一撃を拾いそこねることがある。実測例では、音が
@@ -7,11 +5,12 @@ import { BEATS_PER_BAR } from './beat-analysis'
 // ちょうど 1 拍分が欠けていた。こうなると 1 拍目がグリッド上に存在せず、位相を
 // どれに選んでも指定できないし、その手前は再生からも落ちる。
 //
-// 周辺の拍間隔から外挿して前後を埋める。テンポ一定の 4/4 が前提なので、埋める量は
-// 前後それぞれ 1 小節までに抑える。既に足りている曲には何も足さない。
+// 周辺の拍間隔から外挿して前後を埋める。埋める量は前後それぞれ 4 拍までに抑える
+// （1 小節の拍数を切り替えても意味が変わらないよう、小節ではなく拍で数える）。
+// 既に足りている曲には何も足さない。
 
-/** 前後に補う最大の小節数 */
-const PADDING_BARS = 1
+/** 前後に補う最大の拍数 */
+const PADDING_BEATS = 4
 
 /** 拍間隔を測るのに使う拍数 */
 const SAMPLE_BEATS = 8
@@ -34,10 +33,10 @@ function medianInterval(ticks: Float32Array, from: number, to: number): number {
 export function extendBeatGrid(
   ticks: Float32Array,
   duration: number,
-  paddingBars = PADDING_BARS,
+  paddingBeats = PADDING_BEATS,
 ): Float32Array {
   if (ticks.length < 2) return ticks
-  const limit = Math.max(0, paddingBars) * BEATS_PER_BAR
+  const limit = Math.max(0, paddingBeats)
   if (limit === 0) return ticks
 
   const headInterval = medianInterval(ticks, 0, Math.min(SAMPLE_BEATS, ticks.length - 1))

@@ -1,4 +1,5 @@
-import { BEATS_PER_BAR } from './beat-analysis'
+import type { BeatsPerBar } from './beat-analysis'
+import { type BeatGrid, gridTime } from './slice-plan'
 
 // 波形と拍マーカーの描画。時間軸は元音源のタイムラインで、並べ替え後ではない。
 //
@@ -42,9 +43,10 @@ export interface WaveformScene {
   duration: number
   /** 描画する時間範囲 */
   view: TimeRange
-  ticks: Float32Array | null
-  /** 1 拍目とみなす位相（0〜3） */
-  phase: number
+  grid: BeatGrid | null
+  /** 1 小節目の 1 拍目にあたるグリッド上のインデックス。負も取る */
+  startIndex: number
+  beatsPerBar: BeatsPerBar
   /** 再生中のスライスが指す元音源上の範囲。停止中は null */
   active: { offset: number; duration: number } | null
   /** 拍番号を描く（拡大表示のみ） */
@@ -141,27 +143,30 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
     }
   }
 
-  const { ticks } = scene
-  if (!ticks || ticks.length === 0) return
+  const { grid, beatsPerBar } = scene
+  if (!grid || grid.ticks.length < 2) return
 
-  const secondsPerBeat = duration / ticks.length
+  const total = grid.ticks.length
+  const secondsPerBeat = (gridTime(grid, total - 1) - gridTime(grid, 0)) / Math.max(1, total - 1)
   const beatGap = (secondsPerBeat / span) * width
   const showBeats = beatGap >= MIN_BEAT_GAP
-  const showBars = beatGap * BEATS_PER_BAR >= MIN_BAR_GAP
+  const showBars = beatGap * beatsPerBar >= MIN_BAR_GAP
   if (!showBars) return
 
-  const phase = ((scene.phase % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR
   const barWidth = Math.max(1, Math.round(dpr))
   const labelSize = Math.round(11 * dpr)
   context.font = `600 ${labelSize}px system-ui, sans-serif`
   context.textAlign = 'left'
   context.textBaseline = 'top'
 
-  for (let i = 0; i < ticks.length; i += 1) {
-    const time = ticks[i] ?? 0
+  // 開始インデックスが負なら、音源より手前の拍も番号どおりに描く
+  for (let i = Math.min(0, scene.startIndex); i < total; i += 1) {
+    const time = gridTime(grid, i)
     if (time < scene.view.from || time > scene.view.to) continue
 
-    const isDownbeat = (i - phase) % BEATS_PER_BAR === 0
+    const relative = i - scene.startIndex
+    const inBar = ((relative % beatsPerBar) + beatsPerBar) % beatsPerBar
+    const isDownbeat = inBar === 0
     if (!isDownbeat && !showBeats) continue
     const x = Math.round(timeToX(time))
 
@@ -177,9 +182,8 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
     context.globalAlpha = 1
 
     if (scene.showBeatNumbers && showBeats) {
-      const beat = ((((i - phase) % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR) + 1
       context.fillStyle = isDownbeat ? accentColor : mutedColor
-      context.fillText(String(beat), x + 3 * dpr, 3 * dpr)
+      context.fillText(String(inBar + 1), x + 3 * dpr, 3 * dpr)
     }
   }
 }

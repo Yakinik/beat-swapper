@@ -1,39 +1,22 @@
-import { formatTime } from '@/shared/lib'
 import { Button, Icon, SegmentedControl, Slider } from '@/shared/ui'
 
 import { ORIGINAL_ORDER_TEXT } from '../config/preset-orders'
+import { beatsPerBar } from '../model/bar-shape'
 import { bypass } from '../model/beat-order'
-import {
-  fadeMs,
-  looping,
-  outputPosition,
-  plan,
-  playing,
-  togglePlay,
-  volume,
-} from '../model/playback'
+import { fadeMs, looping, volume } from '../model/playback'
 import styles from './TransportBar.module.css'
 
-const ORDER_MODES = [
-  { value: 'swapped', label: '並べ替え' },
-  { value: 'original', label: `元の順（${ORIGINAL_ORDER_TEXT}）` },
-] as const
-
 export function TransportBar() {
-  const current = plan.value
-  const isPlaying = playing.value
-  const ready = current.slices.length > 0
+  const original = ORIGINAL_ORDER_TEXT[beatsPerBar.value]
 
   return (
     <div class={styles.bar}>
-      <Button variant="primary" onClick={togglePlay} disabled={!ready}>
-        <Icon name={isPlaying ? 'stop' : 'play'} />
-        {isPlaying ? '停止' : '再生'}
-      </Button>
-
       <SegmentedControl
         label="再生する並び"
-        options={ORDER_MODES}
+        options={[
+          { value: 'swapped', label: '並べ替え' },
+          { value: 'original', label: `元の順（${original}）` },
+        ]}
         value={bypass.value ? 'original' : 'swapped'}
         onChange={(value) => {
           bypass.value = value === 'original'
@@ -51,10 +34,6 @@ export function TransportBar() {
       >
         <Icon name="loop" />
       </Button>
-
-      <span class={styles.time}>
-        {formatTime(outputPosition.value)} / {formatTime(current.duration)}
-      </span>
 
       <Slider
         class={styles.slider}

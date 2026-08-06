@@ -1,12 +1,14 @@
 import { Button } from '@/shared/ui'
 
-import { MAX_ORDER_LENGTH, ORDER_PRESETS } from '../config/preset-orders'
-import { orderError, orderText, setOrderText } from '../model/beat-order'
+import { MAX_ORDER_LENGTH } from '../config/preset-orders'
+import { beatsPerBar } from '../model/bar-shape'
+import { orderError, orderText, presets, setOrderText } from '../model/beat-order'
 import styles from './OrderInput.module.css'
 
 export function OrderInput() {
   const text = orderText.value
   const error = orderError.value
+  const beats = beatsPerBar.value
 
   return (
     <div class={styles.block}>
@@ -26,11 +28,11 @@ export function OrderInput() {
       </label>
 
       <p class={error ? styles.error : styles.hint}>
-        {error ?? '1〜4 の数字を並べます。同じ拍を繰り返しても、落としても構いません。'}
+        {error ?? `1〜${beats} の数字を並べます。同じ拍を繰り返しても、落としても構いません。`}
       </p>
 
       <div class={styles.presets}>
-        {ORDER_PRESETS.map((preset) => (
+        {presets.value.map((preset) => (
           <Button
             key={preset.text}
             class={styles.preset}
