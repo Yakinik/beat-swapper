@@ -1,6 +1,6 @@
 import { useRef, useState } from 'preact/hooks'
 
-import { APP_NAME, APP_TAGLINE } from '@/shared/config/app'
+import { APP_NAME, APP_TAGLINE, NOTICES_URL, SOURCE_URL } from '@/shared/config/app'
 
 import { analysis } from '../model/analysis'
 import { openFile } from '../model/session'
@@ -85,8 +85,16 @@ export function SwapperPage() {
           <a href="https://mtg.github.io/essentia.js/" target="_blank" rel="noreferrer">
             Essentia.js
           </a>
-          （AGPL-3.0）の RhythmExtractor2013 を使っています。4/4 拍子でテンポの分かりやすい曲が
-          得意です。
+          （AGPL-3.0）の RhythmExtractor2013 を使っています。テンポの分かりやすい曲が得意です。
+        </p>
+        <p class={styles.legal}>
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            ソースコード（AGPL-3.0）
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={NOTICES_URL} target="_blank" rel="noreferrer">
+            同梱ソフトウェアのライセンス
+          </a>
         </p>
       </footer>
 

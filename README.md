@@ -26,3 +26,19 @@
 
 AGPL-3.0。BPM・拍位置の解析に [Essentia.js](https://mtg.github.io/essentia.js/)
 （AGPL-3.0）の `RhythmExtractor2013` を使っているためです。
+
+配布物に含まれる第三者ソフトウェアと、その全文は
+[THIRD-PARTY-NOTICES.txt](https://yakinik.github.io/beat-swapper/THIRD-PARTY-NOTICES.txt)
+にまとめてあります（`node scripts/collect-licenses.mjs` が生成し、ビルドのたびに更新されます）。
+
+| 対象 | ライセンス |
+| --- | --- |
+| Preact / @preact/signals | MIT |
+| Essentia.js・Essentia C++ | AGPL-3.0 |
+| Kiss FFT（wasm 内） | BSD-3-Clause |
+| Eigen（wasm 内） | MPL-2.0 |
+| TNT（wasm 内） | パブリックドメイン |
+
+Essentia は**非商用利用**について AGPL-3.0 で提供されています。商用利用には
+[Music Technology Group（UPF）から別途ライセンス](https://essentia.upf.edu/licensing_information.html)
+を受ける必要があります。

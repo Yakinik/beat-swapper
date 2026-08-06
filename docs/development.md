@@ -9,6 +9,10 @@ npm run build   # 型チェック + 本番ビルド（dist/）
 npm run preview # dist を /beat-swapper/ で配信して本番と同じ形で確認
 ```
 
+`npm run build` は最初に `scripts/collect-licenses.mjs` を走らせ、配布物に含まれる
+第三者ソフトウェアの表記を `public/THIRD-PARTY-NOTICES.txt` へ書き出す。依存を足したら
+このスクリプトの `PACKAGES` に追記すること。
+
 検証用の音源を用意する（どちらも `samples/` に置かれ、`.gitignore` 対象）。
 
 ```bash

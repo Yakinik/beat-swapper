@@ -29,8 +29,24 @@
 **AGPL-3.0。** essentia.js が AGPL-3.0 なので、リンクしているこのアプリ全体に及ぶ。
 
 - GitHub Pages での配信はネットワーク越しの提供にあたる。**リポジトリは public にして
-  ソースを公開する**ことで義務を満たす。private 化しない。
+  ソースを公開する**ことで義務を満たす。private 化しない。AGPL 第 13 条があるので、
+  **画面からソースの入手先を辿れる状態を保つ**（フッターのリンクを外さない）。
 - essentia.js を外す判断をするまで、このライセンスは変えられない。
+
+### 第三者ソフトウェアの表記
+
+配布物に含まれるのは Preact / @preact/signals（MIT）、Essentia.js・Essentia C++
+（AGPL-3.0）、および essentia.js の wasm に取り込まれている Kiss FFT（BSD-3-Clause）、
+Eigen（MPL-2.0）、TNT（パブリックドメイン）。FFTW・TagLib・FFmpeg・Chromaprint は
+含まれていない（wasm 内の文字列を調べて確認済み）。
+
+- 全文は `scripts/collect-licenses.mjs` が `public/THIRD-PARTY-NOTICES.txt` を生成し、
+  ビルドで `dist/` 直下へ置かれる。`npm run build` の一部なので手で実行しなくてよい。
+- **本番ビルドの最小化で第三者のヘッダコメントは落ちる。** `vite.config.ts` の
+  `licenseBanner` プラグインが、告知の在り処を各チャンクの先頭に必ず残している。
+  `rollupOptions.output.banner` は Rolldown では効かないので使わない。
+- 依存を足したら `PACKAGES` に追記する。wasm の中身を変える依存なら、実際に何が
+  取り込まれたかを確認してから `EMBEDDED` を直す。
 
 ## アーキテクチャ
 
