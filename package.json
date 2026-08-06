@@ -1,0 +1,24 @@
+{
+  "name": "beat-swapper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reorder the beats inside every bar and play the result, entirely in the browser.",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.0",
+    "essentia.js": "^0.1.3",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0"
+  }
+}

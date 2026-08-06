@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="MP3 を読み込んで BPM と拍位置を自動解析し、各小節の拍を 2431 のような好きな順に入れ替えて再生するツール。処理はすべてブラウザ内で完結し、音源はどこにも送信されません。"
+    />
+    <link
+      rel="icon"
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="0.9em" font-size="88">🥁</text></svg>'
+    />
+    <title>Beat Swapper — 小節の拍を入れ替えて再生</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>

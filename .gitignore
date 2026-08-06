@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+.vite/
+.playwright-cli/
+tmp/
+
+# 検証用のサンプル音源。scripts/fetch-samples.mjs で再取得できる
+samples/

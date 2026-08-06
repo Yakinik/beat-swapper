@@ -1,0 +1,40 @@
+.input {
+  display: none;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 220px;
+  padding: 32px 20px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.zone:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.lead {
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hint {
+  max-width: 30em;
+  font-size: 12px;
+  line-height: 1.6;
+}
