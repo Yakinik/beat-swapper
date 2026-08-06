@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import type { AnalyzerRequest, AnalyzerResponse, BeatAnalysis } from './beat-analysis'
+import { extendBeatGrid } from './beat-grid'
 import { computeBeatFeatures, computeFrameBands } from './beat-signal'
 
 // 拍解析ワーカー。essentia.js を import するのはこのファイルだけ。
@@ -52,8 +53,11 @@ const analyze = async (request: AnalyzerRequest): Promise<BeatAnalysis> => {
     signal.delete()
   }
 
-  const features = computeBeatFeatures(computeFrameBands(pcm, sampleRate), ticks)
-  return { bpm, ticks, confidence, features }
+  // 曲頭・曲尾の取りこぼしを先に埋める。特徴量は拡張後のグリッドに対して取るので、
+  // ticks と features の添字は必ず揃う。
+  const grid = extendBeatGrid(ticks, pcm.length / sampleRate)
+  const features = computeBeatFeatures(computeFrameBands(pcm, sampleRate), grid)
+  return { bpm, ticks: grid, confidence, features }
 }
 
 self.onmessage = (event: MessageEvent<AnalyzerRequest>) => {

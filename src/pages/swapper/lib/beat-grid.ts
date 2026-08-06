@@ -1,0 +1,71 @@
+import { BEATS_PER_BAR } from './beat-analysis'
+
+// 曲頭・曲尾の取りこぼしを埋める。
+//
+// RhythmExtractor2013 は曲の最初の一撃を拾いそこねることがある。実測例では、音が
+// 0.069 秒から鳴り始めているのに最初の tick が 0.708 秒（拍間隔 0.662 秒）で、
+// ちょうど 1 拍分が欠けていた。こうなると 1 拍目がグリッド上に存在せず、位相を
+// どれに選んでも指定できないし、その手前は再生からも落ちる。
+//
+// 周辺の拍間隔から外挿して前後を埋める。テンポ一定の 4/4 が前提なので、埋める量は
+// 前後それぞれ 1 小節までに抑える。既に足りている曲には何も足さない。
+
+/** 前後に補う最大の小節数 */
+const PADDING_BARS = 1
+
+/** 拍間隔を測るのに使う拍数 */
+const SAMPLE_BEATS = 8
+
+/** [from, to] の範囲の拍間隔の中央値。テンポ揺れや検出漏れに引きずられにくい。 */
+function medianInterval(ticks: Float32Array, from: number, to: number): number {
+  const gaps: number[] = []
+  for (let i = from + 1; i <= to; i += 1) {
+    const gap = (ticks[i] ?? 0) - (ticks[i - 1] ?? 0)
+    if (gap > 0) gaps.push(gap)
+  }
+  if (gaps.length === 0) return 0
+  gaps.sort((a, b) => a - b)
+  return gaps[gaps.length >> 1] ?? 0
+}
+
+/**
+ * @param duration 音源の長さ [s]。末尾を音源の外へはみ出させないために使う。
+ */
+export function extendBeatGrid(
+  ticks: Float32Array,
+  duration: number,
+  paddingBars = PADDING_BARS,
+): Float32Array {
+  if (ticks.length < 2) return ticks
+  const limit = Math.max(0, paddingBars) * BEATS_PER_BAR
+  if (limit === 0) return ticks
+
+  const headInterval = medianInterval(ticks, 0, Math.min(SAMPLE_BEATS, ticks.length - 1))
+  const before: number[] = []
+  if (headInterval > 0) {
+    let at = (ticks[0] ?? 0) - headInterval
+    while (at >= 0 && before.length < limit) {
+      before.unshift(at)
+      at -= headInterval
+    }
+  }
+
+  const tailFrom = Math.max(0, ticks.length - 1 - SAMPLE_BEATS)
+  const tailInterval = medianInterval(ticks, tailFrom, ticks.length - 1)
+  const after: number[] = []
+  if (tailInterval > 0) {
+    let at = (ticks[ticks.length - 1] ?? 0) + tailInterval
+    while (at <= duration && after.length < limit) {
+      after.push(at)
+      at += tailInterval
+    }
+  }
+
+  if (before.length === 0 && after.length === 0) return ticks
+
+  const extended = new Float32Array(before.length + ticks.length + after.length)
+  extended.set(before, 0)
+  extended.set(ticks, before.length)
+  extended.set(after, before.length + ticks.length)
+  return extended
+}

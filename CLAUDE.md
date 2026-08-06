@@ -63,6 +63,12 @@ Feature-Sliced Design v2.1。`app` / `pages/swapper` / `shared` の 3 レイヤ�
   サンプルレート（多くの端末で 48kHz）へ変換するので、解析用にだけ `OfflineAudioContext`
   で 44.1kHz モノラルへ落とす。再生には元の AudioBuffer を使う。
 - WASM ヒープ上の `VectorFloat` は `.delete()` で明示的に解放する。
+- **`RhythmExtractor2013` は曲の最初の一撃を落とすことがある。** 実測例では音が 0.069 秒
+  から鳴っているのに `ticks[0]` が 0.708 秒（拍間隔 0.662 秒）で、ちょうど 1 拍分が欠けて
+  いた。位相は `index % 4` なので、こうなると本当の 1 拍目がグリッド上に存在せず選べない。
+  `lib/beat-grid.ts` の `extendBeatGrid()` が周辺の拍間隔から前後を最大 1 小節ずつ外挿して
+  埋める。**拍ごとの特徴量は必ず拡張後のグリッドに対して取る**（`ticks` と `features` の
+  添字がずれると 1 拍目の推定が狂う）。
 - **ワーカーへ PCM を transfer する前に波形のピークを取る。** transfer 後は触れない。
   また `AudioBuffer.getChannelData()` の戻り値はそのまま transfer してはいけない
   （再生用データごと detach される）。必ず `.slice()` でコピーする。

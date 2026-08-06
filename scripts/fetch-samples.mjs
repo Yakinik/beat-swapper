@@ -4,12 +4,14 @@
 // samples/ は .gitignore 対象で、公開ビルド（dist）にも入らない。音源そのものを
 // リポジトリへコミットしないかわりに、このスクリプトで誰でも同じ曲を再取得できる。
 //
-// 収録曲はすべて Internet Archive にある CC0 / CC BY のトラック。beat-swapper は
-// 拍を並び替える＝二次的著作物を作るツールなので、改変が許諾されていること（ND でない
-// こと）と、音源ファイルへの直リンク・自動取得が許諾されていることを条件に選んでいる。
+// 収録曲は Internet Archive の CC0 トラックと、PeriTune の CC BY 4.0 トラック。
+// beat-swapper は拍を並び替える＝二次的著作物を作るツールなので、改変が許諾されて
+// いること（ND でないこと）と、音源ファイルへの直リンク・自動取得が許諾されている
+// ことを条件に選んでいる。
 //
-// ここに無い音源を手で samples/ へ置いてもよい。README には「手動で配置した音源」
-// として列挙される。
+// 日本のフリー BGM サイトには直リンクや bot による取得を禁じているところが多い。
+// そうした音源はここに登録せず、配布ページの手順に従って自分で落として samples/ へ
+// 置くこと。README には「手動で配置した音源」として列挙される。
 //
 //   node scripts/fetch-samples.mjs
 
@@ -28,10 +30,6 @@ const LICENSES = {
     label: 'CC0 1.0 Universal (Public Domain Dedication)',
     url: 'https://creativecommons.org/publicdomain/zero/1.0/',
   },
-  'cc-by-3.0': {
-    label: 'CC BY 3.0',
-    url: 'https://creativecommons.org/licenses/by/3.0/',
-  },
   'cc-by-4.0': {
     label: 'CC BY 4.0',
     url: 'https://creativecommons.org/licenses/by/4.0/',
@@ -39,11 +37,13 @@ const LICENSES = {
 }
 
 /**
- * `credit` は CC BY のクレジット表記。CC0 の曲では省略する。
+ * 取得元は 2 通り。Internet Archive の曲は `item` / `file` から URL を組み立て、
+ * それ以外は `url`（音源の直リンク）と `page`（出典ページ）を直接書く。
+ * `credit` は CC BY のクレジット表記で、CC0 の曲では省略する。
  *
- * @type {{ saveAs: string, item: string, file: string, title: string,
- *          artist: string, genre: string, license: keyof typeof LICENSES,
- *          credit?: string }[]}
+ * @type {{ saveAs: string, item?: string, file?: string, url?: string,
+ *          page?: string, title: string, artist: string, genre: string,
+ *          license: keyof typeof LICENSES, credit?: string }[]}
  */
 const SAMPLES = [
   {
@@ -73,37 +73,39 @@ const SAMPLES = [
     genre: 'Minimal techno / RW-Techordings [RWT-012]',
     license: 'cc0',
   },
+  // 以下は PeriTune（日本のフリー BGM）。2026 年 2 月以前に公開された楽曲には
+  // CC BY 4.0 が継続適用される。日本のフリー BGM サイトは音源への直リンクを禁じて
+  // いるところが多い（DOVA-SYNDROME、甘茶の音楽工房、魔王魂など）が、PeriTune は
+  // 禁止しておらず、そもそも CC BY 4.0 なので自動取得しても条件を満たす。
   {
-    saveAs: '04-electronica-broke-for-free-night-owl.mp3',
-    item: 'Directionless_EP-8295',
-    file: 'Broke_For_Free_-_01_-_Night_Owl.mp3',
-    title: 'Night Owl',
-    artist: 'Broke For Free',
-    genre: 'Electronica / Directionless EP',
-    license: 'cc-by-3.0',
-    credit: 'Night Owl by Broke For Free',
-  },
-  {
-    saveAs: '05-soundtrack-kevin-macleod-sneaky-snitch.mp3',
-    item: 'KevinMacLeod',
-    file: 'Soundtrack/Sneaky Snitch.mp3',
-    title: 'Sneaky Snitch',
-    artist: 'Kevin MacLeod',
-    genre: 'Soundtrack / Comedic',
-    // archive.org 側のアイテムは CC0 を掲げているが、原著作者の公式表記（incompetech.com）
-    // は CC BY 4.0。厳しい側に合わせてクレジットを出す。
+    saveAs: '04-cyber-peritune-cyber-noir.mp3',
+    url: 'https://peritune.com/music/PerituneMaterial_Cyber_Noir.mp3',
+    page: 'https://peritune.com/cyber_noir',
+    title: 'Cyber Noir',
+    artist: 'PeriTune',
+    genre: 'Cyber / Techno',
     license: 'cc-by-4.0',
-    credit: 'Sneaky Snitch by Kevin MacLeod (incompetech.com)',
+    credit: 'Cyber Noir by PeriTune',
   },
   {
-    saveAs: '06-ambient-lee-rosevere-lets-start-at-the-beginning.mp3',
-    item: 'LeeRosevere_MusicForPodcasts',
-    file: "Lee Rosevere - Music For Podcasts - 01 Let's Start at the Beginning.mp3",
-    title: "Let's Start at the Beginning",
-    artist: 'Lee Rosevere',
-    genre: 'Ambient / Music For Podcasts',
-    license: 'cc-by-3.0',
-    credit: "Let's Start at the Beginning by Lee Rosevere",
+    saveAs: '05-japanese-rock-peritune-kengeki.mp3',
+    url: 'https://peritune.com/music/PerituneMaterial_Kengeki.mp3',
+    page: 'https://peritune.com/kengeki',
+    title: 'Kengeki（剣戟）',
+    artist: 'PeriTune',
+    genre: 'Japanese rock / Battle',
+    license: 'cc-by-4.0',
+    credit: 'Kengeki by PeriTune',
+  },
+  {
+    saveAs: '06-japanese-peritune-amenoshita3.mp3',
+    url: 'https://peritune.com/music/PerituneMaterial_Amenoshita3.mp3',
+    page: 'https://peritune.com/amenoshita3/',
+    title: 'Amenoshita3（雨の下）',
+    artist: 'PeriTune',
+    genre: 'Japanese / Rhythmic',
+    license: 'cc-by-4.0',
+    credit: 'Amenoshita3 by PeriTune',
   },
 ]
 
@@ -117,10 +119,14 @@ const encodePath = (/** @type {string} */ path) =>
   path.split('/').map(encodeURIComponent).join('/')
 
 const downloadUrl = (/** @type {(typeof SAMPLES)[number]} */ sample) =>
-  `https://archive.org/download/${sample.item}/${encodePath(sample.file)}`
+  sample.url ?? `https://archive.org/download/${sample.item}/${encodePath(sample.file)}`
 
-const itemUrl = (/** @type {(typeof SAMPLES)[number]} */ sample) =>
-  `https://archive.org/details/${sample.item}`
+const sourceUrl = (/** @type {(typeof SAMPLES)[number]} */ sample) =>
+  sample.page ?? `https://archive.org/details/${sample.item}`
+
+/** 出典リンクの見出しに使うホスト名（archive.org / peritune.com）。 */
+const sourceLabel = (/** @type {(typeof SAMPLES)[number]} */ sample) =>
+  new URL(sourceUrl(sample)).hostname
 
 const exists = async (/** @type {string} */ path) => {
   try {
@@ -220,8 +226,7 @@ const writeCredits = async () => {
     '# 検証用サンプル音源',
     '',
     '`node scripts/fetch-samples.mjs` で取得した、拍の明瞭な 4/4 のトラック。',
-    'すべて Internet Archive にある CC0 / CC BY の音源で、改変（拍の並び替え）が',
-    '許諾されている。',
+    'すべて CC0 / CC BY の音源で、改変（拍の並び替え）と自動取得が許諾されている。',
     '',
     'このディレクトリは `.gitignore` 対象で、公開ビルドにも含まれない。',
     '',
@@ -230,7 +235,7 @@ const writeCredits = async () => {
     ...SAMPLES.map(
       (s) =>
         `| \`${s.saveAs}\` | ${s.title} — ${s.artist}<br>${s.genre} |` +
-        ` ${licenseLink(s.license)} | [archive.org](${itemUrl(s)}) |`,
+        ` ${licenseLink(s.license)} | [${sourceLabel(s)}](${sourceUrl(s)}) |`,
     ),
     '',
     '## クレジット表記',
@@ -240,7 +245,7 @@ const writeCredits = async () => {
     ...attributed.map(
       (s) =>
         `- ${s.credit} — Licensed under ${licenseLink(s.license)}` +
-        ` / [source](${itemUrl(s)})`,
+        ` / [source](${sourceUrl(s)})`,
     ),
     '',
   ]

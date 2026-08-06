@@ -55,7 +55,8 @@ src/
          ▼
    beat-analyzer.worker
      Essentia.js RhythmExtractor2013(multifeature) → bpm / ticks[] / confidence
-     帯域別 RMS から拍ごとの特徴量（低域・高域・立ち上がり）
+     beat-grid.ts  曲頭・曲尾の取りこぼしを前後 1 小節まで外挿して埋める
+     beat-signal.ts 帯域別 RMS から拍ごとの特徴量（低域・高域・立ち上がり）
          │
          ▼
    downbeat.ts   位相 0〜3 を推定（手動で 4 段階補正 / 拡大波形クリックで吸着）
@@ -68,8 +69,11 @@ src/
                  BufferSource → GainNode(前後 4ms のフェード) → master → destination
 ```
 
-- 重い DSP は Worker、判断と UI はメインスレッド。`downbeat.ts` と `slice-plan.ts` は
-  副作用のない純関数なので、そのまま数値で検算できる。
+- 重い DSP は Worker、判断と UI はメインスレッド。`beat-grid.ts` `downbeat.ts`
+  `slice-plan.ts` は副作用のない純関数なので、そのまま数値で検算できる。
+- Essentia は曲の最初の一撃を落とすことがある。そのまま使うと本当の 1 拍目がグリッド上に
+  存在せず、位相をどれに選んでも指定できないうえ曲頭が再生から落ちる。`extendBeatGrid()`
+  が前後 1 小節まで外挿して埋める（既に足りている曲には何も足さない）。
 - 並び順は重複・省略を許すので、`1133` や `124` では出力側の小節長が元と変わる。
   各スライスの `startAt`（出力タイムライン上の開始位置）で位置を引く。
 - 波形は「全体」と「拡大 2 小節」の 2 枚。4 分の曲では全体表示だと 1 小節が数 px しか
