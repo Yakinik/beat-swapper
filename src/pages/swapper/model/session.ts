@@ -4,7 +4,13 @@ import { analyzeBeats } from '../lib/analyzer-client'
 import { decodeAudioFile, toAnalysisPcm } from '../lib/audio-source'
 import { ANALYSIS_SAMPLE_RATE, DEFAULT_BEATS_PER_BAR } from '../lib/beat-analysis'
 import { computePeaks } from '../lib/waveform'
-import { analysis, analysisError, analysisStage, resetAdjustments } from './analysis'
+import {
+  analysis,
+  analysisError,
+  analysisStage,
+  resetAdjustments,
+  resetDetection,
+} from './analysis'
 import { stop } from './playback'
 import { track } from './track'
 
@@ -24,6 +30,7 @@ export async function openFile(file: File): Promise<void> {
   analysisError.value = null
   analysisStage.value = 'decoding'
   resetAdjustments()
+  resetDetection()
   busy.value = true
 
   try {

@@ -112,6 +112,32 @@ export function restart(): void {
   seekTo(0)
 }
 
+/**
+ * 元音源の時刻から、そこを鳴らしているスライスへ移る。全体波形をクリックしたときの
+ * 移動に使う。並べ替えで同じ場所が複数回鳴ることもあるので、最初に見つかったものへ。
+ */
+export function seekToSourceTime(sourceTime: number): void {
+  const current = plan.peek()
+  if (current.slices.length === 0) return
+
+  let best = 0
+  let smallest = Number.POSITIVE_INFINITY
+  for (let i = 0; i < current.slices.length; i += 1) {
+    const slice = current.slices[i]
+    if (!slice) continue
+    if (sourceTime >= slice.offset && sourceTime < slice.offset + slice.duration) {
+      best = i
+      break
+    }
+    const distance = Math.abs(slice.offset - sourceTime)
+    if (distance < smallest) {
+      smallest = distance
+      best = i
+    }
+  }
+  seekTo(current.slices[best]?.startAt ?? 0)
+}
+
 /** 出力タイムライン上で 1 拍（＝スライス 1 つ）動かす。 */
 export function stepBeat(delta: number): void {
   const current = plan.peek()

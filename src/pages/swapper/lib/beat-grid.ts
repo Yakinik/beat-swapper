@@ -12,6 +12,33 @@
 /** 前後に補う最大の拍数 */
 const PADDING_BEATS = 4
 
+/** 手入力で受け付けるテンポの範囲 */
+export const MIN_BPM = 20
+export const MAX_BPM = 400
+
+/** 開始位置を音源より手前へどこまで置けるか [s] */
+const MAX_LEAD_IN = 60
+
+/**
+ * BPM と開始位置から等間隔の拍列を作る。
+ *
+ * 検出した拍位置はテンポ揺れに追従できる反面、テンポを半分・倍に取り違えたり
+ * グリッドごとずれたりすると手直しできない。BPM か開始位置を手で触ったときは、
+ * 検出結果を捨ててこちらへ切り替える。
+ */
+export function makeUniformTicks(
+  startSeconds: number,
+  bpm: number,
+  duration: number,
+): Float32Array {
+  const beat = 60 / Math.min(Math.max(bpm, MIN_BPM), MAX_BPM)
+  const from = Math.max(startSeconds, -MAX_LEAD_IN)
+  const count = Math.max(2, Math.floor((Math.max(duration, 0) - from) / beat) + 1)
+  const ticks = new Float32Array(count)
+  for (let i = 0; i < count; i += 1) ticks[i] = from + i * beat
+  return ticks
+}
+
 /** 拍間隔を測るのに使う拍数 */
 const SAMPLE_BEATS = 8
 

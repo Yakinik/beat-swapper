@@ -1,11 +1,11 @@
-import { useSignal, useSignalEffect } from '@preact/signals'
+import { useSignalEffect } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
 
 import { barRange, gridTime } from '../lib/slice-plan'
 import { type TimeRange, drawWaveform } from '../lib/waveform'
 import { analysis, grid, setDownbeatFromTime, startIndex } from '../model/analysis'
 import { beatsPerBar } from '../model/bar-shape'
-import { activeSlice } from '../model/playback'
+import { activeSlice, seekToSourceTime } from '../model/playback'
 import { track } from '../model/track'
 import styles from './WaveformView.module.css'
 
@@ -17,14 +17,21 @@ const ratioOfClick = (canvas: HTMLCanvasElement, clientX: number): number => {
   return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
 }
 
+interface Layout {
+  /** 全体表示の時間範囲。音源より手前を鳴らすときは負から始まる */
+  overview: TimeRange
+  /** 拡大表示の時間範囲 */
+  detail: TimeRange
+  /** いま鳴っている小節の範囲 */
+  currentBar: TimeRange | null
+}
+
 export function WaveformView() {
   const overviewRef = useRef<HTMLCanvasElement>(null)
   const detailRef = useRef<HTMLCanvasElement>(null)
-  /** 停止中に拡大表示が見ている中心時刻。0 なら 1 小節目。 */
-  const detailCenter = useSignal(0)
 
   // 描画は peek だけで読む。購読は useSignalEffect 側で明示する。
-  const detailView = (): TimeRange | null => {
+  const layout = (): Layout | null => {
     const loaded = track.peek()
     const current = grid.peek()
     if (!loaded || !current || current.ticks.length < 2) return null
@@ -37,16 +44,21 @@ export function WaveformView() {
     const window = Math.max(0.5, DETAIL_BARS * beats * beatSeconds)
     const half = window / 2
 
-    // 再生中は鳴っている小節を追う。拍ごとに動かすと目が回るので小節単位で止める。
-    const slice = activeSlice.peek()
-    const playingBar = slice ? barRange(current, head, beats, slice.bar) : null
-    const center = playingBar
-      ? (playingBar.from + playingBar.to) / 2
-      : detailCenter.peek() || gridTime(current, head) + half
+    // 音源より手前から始めているぶんは、全体表示にも枠として出す
+    const leadIn = Math.max(0, -gridTime(current, head))
+    const overview = { from: -leadIn, to: loaded.buffer.duration }
 
-    const limit = Math.max(half, loaded.buffer.duration - half)
-    const clamped = Math.min(Math.max(center, half), limit)
-    return { from: clamped - half, to: clamped + half }
+    const slice = activeSlice.peek()
+    const currentBar = slice ? barRange(current, head, beats, slice.bar) : null
+    const center = currentBar
+      ? (currentBar.from + currentBar.to) / 2
+      : gridTime(current, head) + half
+
+    const clamped = Math.min(
+      Math.max(center, overview.from + half),
+      Math.max(overview.from + half, loaded.buffer.duration - half),
+    )
+    return { overview, detail: { from: clamped - half, to: clamped + half }, currentBar }
   }
 
   const redraw = () => {
@@ -61,21 +73,27 @@ export function WaveformView() {
       beatsPerBar: beatsPerBar.peek(),
       active: activeSlice.peek(),
     }
-    const view = detailView()
+    const box = layout()
 
     const overview = overviewRef.current
     if (overview) {
       drawWaveform(overview, {
         ...shared,
-        view: { from: 0, to: loaded.buffer.duration },
-        focus: view,
+        view: box?.overview ?? { from: 0, to: loaded.buffer.duration },
+        focus: box?.detail ?? null,
         normalize: 'track',
       })
     }
 
     const detail = detailRef.current
-    if (detail && view) {
-      drawWaveform(detail, { ...shared, view, showBeatNumbers: true, normalize: 'view' })
+    if (detail && box) {
+      drawWaveform(detail, {
+        ...shared,
+        view: box.detail,
+        showBeatNumbers: true,
+        dimOutside: box.currentBar,
+        normalize: 'view',
+      })
     }
   }
 
@@ -85,7 +103,6 @@ export function WaveformView() {
     void startIndex.value
     void beatsPerBar.value
     void activeSlice.value
-    void detailCenter.value
     redraw()
   })
 
@@ -106,12 +123,13 @@ export function WaveformView() {
         ref={overviewRef}
         class={styles.overview}
         role="img"
-        aria-label="曲全体の波形。クリックすると拡大表示がその位置へ移動します"
+        aria-label="曲全体の波形。クリックするとその位置から再生します"
         onClick={(event) => {
           const canvas = overviewRef.current
-          const loaded = track.peek()
-          if (!canvas || !loaded) return
-          detailCenter.value = ratioOfClick(canvas, event.clientX) * loaded.buffer.duration
+          const box = layout()
+          if (!canvas || !box) return
+          const span = box.overview.to - box.overview.from
+          seekToSourceTime(box.overview.from + ratioOfClick(canvas, event.clientX) * span)
         }}
       />
 
@@ -124,17 +142,16 @@ export function WaveformView() {
             aria-label="拡大した波形と拍番号。クリックするとその拍を 1 拍目にします"
             onClick={(event) => {
               const canvas = detailRef.current
-              if (!canvas) return
-              const view = detailView()
-              if (!view) return
-              const time = view.from + ratioOfClick(canvas, event.clientX) * (view.to - view.from)
-              detailCenter.value = time
-              setDownbeatFromTime(time)
+              const box = layout()
+              if (!canvas || !box) return
+              const span = box.detail.to - box.detail.from
+              setDownbeatFromTime(box.detail.from + ratioOfClick(canvas, event.clientX) * span)
             }}
           />
           <p class={styles.hint}>
-            下の拡大表示で、太い線と数字の <b>1</b> がキックなど小節の頭に合っていれば正解です。
-            ずれていたらその拍をクリックするか、「小節の頭」でずらします。
+            拡大表示は再生中の小節を追いかけます。太い線と数字の <b>1</b> がキックなど小節の頭に
+            合っていれば正解です。ずれていたらその拍をクリックするか、「小節の頭」でずらします。
+            斜線の区間は音源より手前で、無音のまま再生されます。
           </p>
         </>
       )}

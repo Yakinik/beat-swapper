@@ -53,6 +53,8 @@ export interface WaveformScene {
   showBeatNumbers?: boolean
   /** 全体表示に重ねる、拡大表示が見ている範囲 */
   focus?: TimeRange | null
+  /** ここ以外を薄く伏せる（再生中の小節を目立たせる） */
+  dimOutside?: TimeRange | null
   /** 振幅の正規化を曲全体で揃えるか、表示範囲の中で取るか */
   normalize?: 'track' | 'view'
 }
@@ -83,6 +85,7 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
   const waveColor = readColor(styles, '--line', '#d0d4dc')
   const accentColor = readColor(styles, '--accent', '#2f6df6')
   const mutedColor = readColor(styles, '--muted', '#6a7280')
+  const panelColor = readColor(styles, '--panel', '#ffffff')
 
   context.clearRect(0, 0, width, height)
 
@@ -91,6 +94,30 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
   if (peaks.length === 0 || duration <= 0 || span <= 0) return
 
   const timeToX = (time: number) => ((time - scene.view.from) / span) * width
+
+  // 音源より手前（開始する小節をマイナスにしたとき）は波形が無いので、斜線で
+  // 「無音だが再生される区間」だと分かるようにする。
+  if (scene.view.from < 0) {
+    const edge = Math.min(width, timeToX(0))
+    if (edge > 0) {
+      context.save()
+      context.beginPath()
+      context.rect(0, 0, edge, height)
+      context.clip()
+      context.strokeStyle = mutedColor
+      context.globalAlpha = 0.22
+      context.lineWidth = Math.max(1, dpr)
+      const gap = 8 * dpr
+      for (let x = -height; x < edge + height; x += gap) {
+        context.beginPath()
+        context.moveTo(x, height)
+        context.lineTo(x + height, 0)
+        context.stroke()
+      }
+      context.globalAlpha = 1
+      context.restore()
+    }
+  }
   const columnAt = (time: number) =>
     Math.min(peaks.length - 1, Math.max(0, Math.floor((time / duration) * peaks.length)))
 
@@ -131,6 +158,18 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
     context.fillRect(x, centerY - amplitude, 1, Math.max(dpr, amplitude * 2))
   }
 
+  // 鳴っている範囲に帯を敷く。波形が無い区間（音源より手前）でも位置が分かる。
+  if (scene.active) {
+    const from = Math.max(0, activeFrom)
+    const to = Math.min(width, activeTo)
+    if (to > from) {
+      context.fillStyle = accentColor
+      context.globalAlpha = 0.16
+      context.fillRect(from, 0, Math.max(dpr, to - from), height)
+      context.globalAlpha = 1
+    }
+  }
+
   // 拡大表示が見ている範囲（全体表示にだけ描く）
   if (scene.focus) {
     const from = Math.max(0, timeToX(scene.focus.from))
@@ -143,15 +182,35 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
     }
   }
 
+  // 再生中の小節以外を伏せる。背景色を重ねるので、明るいテーマでも暗いテーマでも
+  // 「引っ込んで見える」side へ寄る。
+  const dimOutside = (): void => {
+    const range = scene.dimOutside
+    if (!range) return
+    const from = Math.max(0, Math.min(width, timeToX(range.from)))
+    const to = Math.max(0, Math.min(width, timeToX(range.to)))
+    context.fillStyle = panelColor
+    context.globalAlpha = 0.62
+    if (from > 0) context.fillRect(0, 0, from, height)
+    if (to < width) context.fillRect(to, 0, width - to, height)
+    context.globalAlpha = 1
+  }
+
   const { grid, beatsPerBar } = scene
-  if (!grid || grid.ticks.length < 2) return
+  if (!grid || grid.ticks.length < 2) {
+    dimOutside()
+    return
+  }
 
   const total = grid.ticks.length
   const secondsPerBeat = (gridTime(grid, total - 1) - gridTime(grid, 0)) / Math.max(1, total - 1)
   const beatGap = (secondsPerBeat / span) * width
   const showBeats = beatGap >= MIN_BEAT_GAP
   const showBars = beatGap * beatsPerBar >= MIN_BAR_GAP
-  if (!showBars) return
+  if (!showBars) {
+    dimOutside()
+    return
+  }
 
   const barWidth = Math.max(1, Math.round(dpr))
   const labelSize = Math.round(11 * dpr)
@@ -186,4 +245,6 @@ export function drawWaveform(canvas: HTMLCanvasElement, scene: WaveformScene): v
       context.fillText(String(inBar + 1), x + 3 * dpr, 3 * dpr)
     }
   }
+
+  dimOutside()
 }
