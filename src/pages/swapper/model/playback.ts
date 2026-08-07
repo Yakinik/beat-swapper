@@ -1,7 +1,7 @@
 import { computed, effect, signal } from '@preact/signals'
 
 import { DEFAULT_PLAYBACK_RATE } from '../config/playback-rates'
-import { getAudioContext, resumeAudioContext } from '../lib/audio-context'
+import { getAudioContext, resumeAudioContext, unlockAudioContext } from '../lib/audio-context'
 import { SlicePlayer } from '../lib/scheduler'
 import { EMPTY_PLAN, type SlicePlan, buildSlicePlan, sliceIndexAt } from '../lib/slice-plan'
 import { grid, startIndex } from './analysis'
@@ -75,6 +75,8 @@ const stopPump = () => {
 
 export async function play(): Promise<void> {
   if (plan.peek().slices.length === 0) return
+  // await より前に、ユーザー操作と同じタスクの中で解錠しておく（iOS 対策）
+  unlockAudioContext()
   await resumeAudioContext()
   const current = getPlayer()
   current.play(playhead.peek())
