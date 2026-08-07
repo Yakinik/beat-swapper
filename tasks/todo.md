@@ -1,89 +1,87 @@
-# 再生速度とプリセットまわりの整理
+# ライセンス表記の整備と GitHub Pages への初回公開
 
 ## 要件
 
-- [x] 再生機能カードの右側に再生速度切り替えを追加（プリセットはよくあるもので可）
-- [x] 並び順プリセットの先頭に `1234` を追加し、`3142` を削除
-- [x] 不要になる `並べ替え` / `元の順` トグルを削除
-- [x] ループ再生ボタンも再生機能カードへ移動
-- [x] 再生速度を変えてもピッチを維持する
-- [x] 再生速度エリアを「入力欄 + ▼（プルダウンにプリセット）」にして横幅を節約
-- [x] デフォルトの並び順を `1234` にする
-- [x] 停止中に停止ボタンを押したら、波形プレビューを開始位置まで戻す
-- [x] `小節の頭` のラベルを `開始する拍` へ変更
+- [x] 公開にあたって表記すべきライセンスを洗い出す
+- [x] 表記を配布物に含める
+- [x] GitHub Pages へ公開する（master をデフォルト、develop で開発、pages で公開）
 
-## 設計
+## 調査結果
 
-### ピッチを保った時間伸縮（OLA）
+`dist/` に実際に入るものを調べた。essentia.js の wasm については、バイナリ中の
+文字列を抽出して取り込まれているコンポーネントを特定した。
 
-`playbackRate` を動かすと速度と一緒にピッチも動く。依存を増やさずにピッチを保つため、
-スケジューラの中で重ね合わせ（OLA）による時間伸縮を実装した。
+| 対象 | ライセンス | 求められること |
+| --- | --- | --- |
+| Preact / @preact/signals / signals-core | MIT | 著作権表示と許諾文を複製物に含める |
+| essentia.js / Essentia C++ | AGPL-3.0 | すべての告知を保持する・ソースを提供する |
+| Kiss FFT（wasm 内） | BSD-3-Clause | 著作権表示・条件・免責を添付物に再掲する |
+| Eigen（wasm 内） | MPL-2.0 | MPL であることと入手方法を知らせる |
+| TNT（wasm 内） | パブリックドメイン | 表記のみ |
 
-- 各グレインは **等速のまま**鳴らし、読み出し位置だけを速度ぶん進める
-- グレイン長 90ms・ホップ 45ms で半分ずつ重ね、三角の窓で足すと振幅が一定になる
-- 先頭のグレインは相方がいないので 1 から始める（打点の立ち上がりを鈍らせない）
-- グレインの読み出しは**スライスの範囲内に収める**。はみ出させると隣の拍の音が
-  混じって並べ替えた意味が薄れる（終端の振幅は落ちるが、スライスのフェードが隠す）
-- **等速（1×）のときは分割しない。** 1 スライス 1 ノードで素通しする
+FFTW / TagLib / FFmpeg / Chromaprint（GPL・LGPL のもの）は**含まれていなかった**。
 
-副作用として、変速時は打点がわずかに滲む（OLA の宿命）。品質が足りなければ
-時間伸縮ライブラリへ差し替える余地はある。
+**実際にあった不備**: 本番ビルドの最小化で essentia.js の AGPL ヘッダコメントが
+落ちていた（`dist/assets/essentia-wasm.es-*.js` に copyright 0 件）。
 
-### 再生速度の UI
+## 対処
 
-6 分割のセグメントは横幅を食うので、入力欄 + ▼ の組み合わせにした。プリセット以外の
-値も直接入力できる（0.25〜4 倍でクランプ）。
+- `scripts/collect-licenses.mjs` が `node_modules` の LICENSE を読んで
+  `public/THIRD-PARTY-NOTICES.txt` を生成する。`npm run build` の先頭で走るので
+  依存を更新したら自動で追従する。内容を手で書き写さない
+- `vite.config.ts` の `licenseBanner` プラグインが、告知の在り処を全チャンクの先頭に
+  残す。`rollupOptions.output.banner` は Rolldown では効かないので `generateBundle` で足す
+- AGPL 第 13 条に応えて、フッターへソースコードと同梱ライセンスへのリンクを置いた
 
 ## Review
 
-### 変更したファイル
+### 公開の構成
 
-| ファイル | 変更 |
+| ブランチ | 役割 | 中身 |
+| --- | --- | --- |
+| `master`（デフォルト） | 情報掲示 | `LICENSE` `README.md` |
+| `develop` | 開発ソース | ソース一式 |
+| `pages` | Pages 配信元 | `.nojekyll` `index.html` `assets` `THIRD-PARTY-NOTICES.txt` |
+
+- リポジトリ: https://github.com/Yakinik/beat-swapper（PUBLIC）
+- 公開 URL: https://yakinik.github.io/beat-swapper/
+- instant-mask と同じ構成（default=master / Pages source=pages `/`）
+
+### 公開時につまずいた点
+
+初回の `pages build and deployment` が失敗した。原因は GitHub 側の障害で、
+こちらの内容には触れる前の「Set up job」段階だった。
+
+```
+Failed to resolve action download info. Error: Service Unavailable
+##[error]Internal Server Error
+```
+
+GitHub Status も Pages が `major_outage`、Actions のインシデント調査中を示していた。
+**リポジトリには一切手を入れず**、`POST /repos/.../pages/builds` でビルドを要求し直す
+だけで復旧後に成功した。再プッシュ・force-push・デプロイ方式の変更・リポジトリの
+作り直しはしていない。
+
+### 公開サイトでの確認
+
+| 項目 | 結果 |
 | --- | --- |
-| `config/playback-rates.ts` | 新規。プリセットと上下限 |
-| `config/preset-orders.ts` | プリセットの入れ替え、既定を `1234` に、`ORIGINAL_ORDER_TEXT` を廃止 |
-| `lib/scheduler.ts` | 実時間と出力時間の分離、OLA による時間伸縮、`setRate()` |
-| `model/playback.ts` | `playbackRate`、速度変更時の積み直し |
-| `model/beat-order.ts` | `bypass` を削除 |
-| `ui/PlaybackRateField.tsx` | 新規。入力欄 + プルダウン |
-| `ui/TransportCard.tsx` | ループボタンと速度フィールドを収容 |
-| `ui/TransportBar.tsx` | 音量とフェードだけに |
-| `ui/BeatGridControls.tsx` | ラベルを `開始する拍` へ |
+| 初期ロード | `index.js` + `index.css` のみ（Essentia は落ちてこない） |
+| 曲を読み込んだ後 | worker → essentia core → essentia wasm の順に取得 |
+| 解析 | 120BPM のクリックトラックで BPM **119.95** / 開始位置 488ms |
+| 再生 | 7 秒で 0:01→0:08（実時間どおり） |
+| 告知ファイル | 200 / 41,537 バイト / 7 コンポーネントの節 |
+| フッターのリンク | Essentia.js・ソースコード・同梱ライセンスの 3 本とも正しい |
 
-### 検証結果
-
-テストトーン（120BPM）で計測。`createBufferSource` を包んで生成ノードを数えた。
-
-| 速度 | 位置の進む速さ | 2 秒あたりのノード数 | 各ノードの playbackRate |
-| --- | --- | --- | --- |
-| 1× | 0.991 | 4 | 1 |
-| 2× | 1.983 | 48 | 1 |
-| 0.5× | 0.501 | 45 | 1 |
-
-**全ノードの `playbackRate` が 1 のまま**なので、リサンプリングしておらずピッチは
-変わらない。等速では 1 スライス 1 ノード（4 ノード＝ほぼ拍数）、変速時のみグレインに
-割れているのも意図どおり。
-
-UI:
-
-- 既定の並び順 `1234`
-- 4 拍プリセット `1234 / 2431 / 4321 / 1324 / 1133 / 124`
-- 3 拍プリセット `123 / 231 / 321 / 132 / 113 / 12`
-- `並べ替え` / `元の順` トグルは 0 個（削除済み）
-- ループボタンは再生カードの中にある
-- 速度フィールドは既定 `1`、プルダウンは `0.5× 0.75× 1× 1.25× 1.5× 2×`、
-  選ぶと値が入って閉じる
-- スライダーのラベルは `拍の調節` / `開始する拍` / `開始する小節`
-
-停止の挙動: 再生中に 1 小節進むを 2 回 → `playing=true / head=11.96 / bar 7`。
-停止を押すと `playing=false / head=0 / bar 0` になり、停止中にもう一度押しても
-`head=0 / bar 0` のまま。拡大波形は再生位置（bar 0）を追うので、開始位置が出る。
-
-コンソールにエラー・警告なし。アプリ本体は gzip 22.1KB → **23.0KB**。
+初回再生時に一度だけ `AudioContext encountered an error from the audio device` が
+出たが、再測定では再現せず再生時刻も 1:1 で進んだ。音声デバイスを持たない自動操作
+ブラウザ側の事情とみている。
 
 ### 残課題・申し送り
 
-- OLA は打点がわずかに滲む。グレイン長 45ms は「低音がやせる」と「打点が二重に
-  聞こえる」の折り合いで選んだ値なので、気になるなら調整の余地がある
-- 速度変更は積み直しを伴うので、スライダーのように連続で変えると音が途切れる
-  （プリセット選択・確定入力での変更を想定している）
+- Essentia は**非商用利用**について AGPL-3.0。商用化するなら UPF から別途ライセンスが
+  要る（README と告知ファイルに明記済み）
+- 依存を足したら `scripts/collect-licenses.mjs` の `PACKAGES` に追記する。wasm の中身が
+  変わる依存なら、実際に何が取り込まれたか確認してから `EMBEDDED` を直す
+- AGPL 第 13 条があるので、フッターのソースリンクを外さない・リポジトリを private に
+  しない
