@@ -18,6 +18,15 @@ export function getAudioContext(): AudioContext {
  */
 export function unlockAudioContext(): void {
   const audio = getAudioContext()
+
+  // iOS の消音スイッチを無視して鳴らす。既定の 'auto' は Safari では ambient 相当に
+  // 落ち、スイッチに従うので無音になる。'playback' は排他カテゴリなので他アプリの
+  // 音楽は止まるが、音を聴くことが主機能のツールなのでそちらを取る。
+  // モジュール読み込み時ではなく再生操作の中で設定すること（押す前に他アプリの
+  // 音楽を止めてしまわないため）。未対応のブラウザでは何もしない。
+  const session = navigator.audioSession
+  if (session) session.type = 'playback'
+
   void audio.resume()
   try {
     const silence = audio.createBufferSource()
